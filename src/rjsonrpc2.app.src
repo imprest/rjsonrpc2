@@ -1,0 +1,7 @@
+{application, rjsonrpc2, [
+  {description, "Restricted implementation of JSONRPC 2.0."},
+  {vsn, "0.1"},
+  {registered, []},
+  {applications, [kernel, stdlib]}
+]}.
+
