@@ -1,9 +1,9 @@
 %% @author Hardik Varia <hardikvaria@gmail.com>
-%% @copyright Copyright (c) 2011, Hardik Varia <hardikvaria@gmail.com>
+%% @copyright Copyright (c) 2012, Hardik Varia <hardikvaria@gmail.com>
 %%            See LICENSE file for more information.
 
 %% @doc Restricted implementation of the JSONRPC 2.0 spec
-%%      <a href="http://groups.google.com/group/json-rpc/web/json-rpc-2-0">
+%%      <a href="http://www.jsonrpc.org/specification">
 %%      <tt>http://groups.google.com/group/json-rpc/web/json-rpc-2-0</tt></a>
 %%
 %%      Only supports JSONRPC 2.0 requests with named parameters and needs a
@@ -20,12 +20,12 @@
 -define(JSONRPC_VERSION, <<"2.0">>).
 -define(JSONRPC2, {<<"jsonrpc">>, ?JSONRPC_VERSION}).
 -define(ERROR_OBJECT(CODE, MSG), {[ ?JSONRPC2
-                                  , {<<"error">>, {[ {<<"code">>, CODE}
-                                                   , {<<"message">>, MSG}]}}
-                                  , {<<"id">>, null}]}).
+                                   , {<<"error">>, {[ {<<"code">>, CODE}
+                                                     , {<<"message">>, MSG}]}}
+                                   , {<<"id">>, null}]}).
 -define(RESPONSE_OBJECT(RESULT, ID), {[ ?JSONRPC2
-                                      , {<<"result">>, RESULT}
-                                      , {<<"id">>, ID}]}).
+                                       , {<<"result">>, RESULT}
+                                       , {<<"id">>, ID}]}).
 
 % Error code for -32768 to -32000 are reserved for pre-defined errors by the spec.
 % Predefined error codes.
@@ -111,7 +111,8 @@ is_valid_method(Method, Interface) ->
 
 % Check if params are correct for the requested method
 is_valid_params(Method, JsonParams, Interface) ->
-  ParamsTypeList = get_key_value(Method, Interface),
+  Params = get_key_value(Method, Interface),
+  ParamsTypeList = get_key_value(params, Params),
   case JsonParams of
     undefined -> [] =:= ParamsTypeList;
     [] -> ParamsTypeList =:= JsonParams;
@@ -142,16 +143,18 @@ get_key_value(Key, List) ->
 -include_lib("eunit/include/eunit.hrl").
 
 test_interface() ->
-  [{<<"test_zero_params">>, []},
-   {<<"test_invalid_param_type">>, [{<<"invalid_param">>, integer}]},
-   {<<"test_invalid_param_type2">>, [{<<"invalid_param2">>, "invalid"}]},
-   {<<"test_param_types">>,
+  [{<<"test_zero_params">>, [{params, []}]},
+   {<<"test_invalid_param_type">>, 
+    [{params, [{<<"invalid_param">>, integer}]}]},
+   {<<"test_invalid_param_type2">>, 
+    [{params, [{<<"invalid_param2">>, "invalid"}]}]},
+   {<<"test_param_types">>, [{ params, 
      [{<<"test_binary">>  , binary},
       {<<"test_integer">> , integer},
       {<<"test_float">>   , float},
       {<<"test_boolean">> , boolean},
       {<<"test_null">>    , null},
-      {<<"test_list">>    , list}]}].
+      {<<"test_list">>    , list}]}]}].
 
 test_invalid_request() ->
   {[{<<"jsonrpc">>, <<"1.5">>}]}.
