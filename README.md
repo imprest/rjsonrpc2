@@ -1,7 +1,7 @@
 RJSONRPC2 - Restricted implementation of JSON-RPC 2.0 for Erlang
 ================================================================
 Restricted implementation of the JSONRPC 2.0 spec
-http://groups.google.com/group/json-rpc/web/json-rpc-2-0
+www.jsonrpc.org/specification
 
 Only supports JSONRPC 2.0 requests with named parameters and needs a
 interface/proplists of methods and parameter types that is used to
