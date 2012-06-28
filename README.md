@@ -34,9 +34,9 @@ and response (See misultin wiki on github to setup websocket server)
 % Aside: parameter types can be the following atoms
 %        binary|integer|float|boolean|list
 interface() ->
-  [{&lt;&lt;"login">>, [{&lt;&lt;"username">>, binary},
-                  {&lt;&lt;"password">>, binary}]},
-   {&lt;&lt;"logout">>, []}].
+  [{&lt;&lt;"login">>, [{params, [{&lt;&lt;"username">>, binary},
+                  {&lt;&lt;"password">>, binary}]}]},
+   {&lt;&lt;"logout">>, [{params, []}]}].
 
 % Misultin websocket loop to handle browser json requests
 ws_loop(Ws) ->
