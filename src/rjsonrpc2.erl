@@ -128,6 +128,7 @@ is_valid_param({Param, Value, ParamsTypeList}) ->
     case {get_key_value(Param, ParamsTypeList), Value} of
         {_Type, null}   -> true;
         {binary,  _}    -> is_binary(Value);
+        {json,    _}    -> true;
         {integer, _}    -> is_integer(Value);
         {float,   _}    -> is_float(Value);
         {boolean, _}    -> is_boolean(Value);
@@ -157,6 +158,7 @@ test_interface() ->
                                           {<<"test_param2">>, binary }]}]},
      {<<"test_param_types">>, [{ params, 
                                 [{<<"test_binary">>  , binary},
+                                 {<<"test_json">>    , json},
                                  {<<"test_integer">> , integer},
                                  {<<"test_float">>   , float},
                                  {<<"test_boolean">> , boolean},
@@ -243,6 +245,7 @@ test_param_types() ->
     {[{<<"jsonrpc">>, <<"2.0">>},
       {<<"method">>, <<"test_param_types">>},
       {<<"params">>, {[{<<"test_binary">>  , <<"hello">>},
+                       {<<"test_json">>, {[{<<"key">>, <<"value">>}]}},
                        {<<"test_integer">> , -1},
                        {<<"test_float">>   , -0.1},
                        {<<"test_boolean">> , false},
@@ -252,6 +255,7 @@ test_param_types() ->
 decoded_test_param_types() ->
     {<<"test_param_types">>,
      [{<<"test_binary">>  , <<"hello">>},
+      {<<"test_json">>, {[{<<"key">>, <<"value">>}]} },
       {<<"test_integer">> , -1},
       {<<"test_float">>   , -0.1},
       {<<"test_boolean">> , false},
