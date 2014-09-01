@@ -19,20 +19,28 @@
 % Macros
 -define(JSONRPC_VERSION, <<"2.0">>).
 -define(JSONRPC2, {<<"jsonrpc">>, ?JSONRPC_VERSION}).
--define(ERROR_OBJECT(CODE, MSG), {[?JSONRPC2, 
-                                   {<<"error">>, {[{<<"code">>, CODE}, 
-                                                   {<<"message">>, MSG}]}}, 
+-define(ERROR_OBJECT(CODE, MSG), {[?JSONRPC2,
+                                   {<<"error">>, {[{<<"code">>, CODE},
+                                                   {<<"message">>, MSG}]}},
                                    {<<"id">>, null}]}).
--define(RESPONSE_OBJECT(RESULT, ID), {[?JSONRPC2, 
-                                       {<<"result">> , RESULT}, 
+-define(ERROR_OBJECT(CODE, MSG, ID), {[?JSONRPC2,
+                                       {<<"error">>, {[{<<"code">>, CODE},
+                                                       {<<"message">>, MSG}]}},
+                                       {<<"id">>, ID}]}).
+-define(RESPONSE_OBJECT(RESULT, ID), {[?JSONRPC2,
+                                       {<<"result">> , RESULT},
                                        {<<"id">>, ID}]}).
 
 % Error code for -32768 to -32000 are reserved for pre-defined errors by the spec.
 % Predefined error codes.
--define(PARSE_ERROR     , {error, ?ERROR_OBJECT(-32700, <<"Server unable to parse JSON.">>)}).
--define(INVALID_REQUEST , {error, ?ERROR_OBJECT(-32600, <<"Not valid JSON-RPC 2.0.">>)}).
--define(METHOD_NOT_FOUND, {error, ?ERROR_OBJECT(-32601, <<"Method not found.">>)}).
--define(INVALID_PARAMS  , {error, ?ERROR_OBJECT(-32602, <<"Invalid params.">>)}).
+-define(PARSE_ERROR,
+        {error, ?ERROR_OBJECT(-32700, <<"Server unable to parse JSON.">>)}).
+-define(INVALID_REQUEST,
+        {error, ?ERROR_OBJECT(-32600, <<"Not valid JSON-RPC 2.0.">>)}).
+-define(METHOD_NOT_FOUND(ID),
+        {error, ?ERROR_OBJECT(-32601, <<"Method not found.">>, ID)}).
+-define(INVALID_PARAMS(ID),
+        {error, ?ERROR_OBJECT(-32602, <<"Invalid params.">>, ID)}).
 % -define(INTERNAL_ERROR, ?ERROR_OBJECT(-32603, <<"Internal error.">>)).
 % -32099 to -32000 for Server error i.e. Reserved for implementation-defined server-errors.
 
@@ -45,18 +53,18 @@ decode(EncodedJson, Interface) ->
             case is_jsonrpc2(Json) of % Test if the request is valid jsonrpc2.0 request
                 true  -> decode2(Json, Interface);
                 false -> ?INVALID_REQUEST
-             end;
+            end;
         false  -> ?PARSE_ERROR
-    end. 
+    end.
 % Test request object is calling a valid Method
 decode2(Json, Interface) ->
     Id     = get_key_value(<<"id">>, Json),
     Method = get_key_value(<<"method">>, Json),
     case is_valid_method(Method, Interface) of
-        true  -> decode3(Id, 
-                         Method, 
+        true  -> decode3(Id,
+                         Method,
                          get_key_value(<<"params">>, Json), Interface);
-        false -> ?METHOD_NOT_FOUND
+        false -> ?METHOD_NOT_FOUND(Id)
     end.
 % Check if request params match for method call
 decode3(Id, Method, Params, Interface) ->
@@ -68,7 +76,7 @@ decode3(Id, Method, Params, Interface) ->
                 false -> {ParamList} = Params, {Method, ParamList, Id};
                 true  -> {Method, [], Id}
             end;
-        false -> ?INVALID_PARAMS
+        false -> ?INVALID_PARAMS(Id)
     end.
 
 % Check if it is valid json and only accept json objects
@@ -85,7 +93,7 @@ is_jsonrpc2(Json) ->
     case ?JSONRPC_VERSION =:= get_key_value(<<"jsonrpc">>, Json) of
         true  -> check_method(Json);
         false -> false
-    end. 
+    end.
 check_method(Json) ->
     case is_binary(get_key_value(<<"method">>, Json)) of
         true  -> check_params(Json);
@@ -97,7 +105,7 @@ check_id(Json) ->
     Id = get_key_value(<<"id">>, Json),
     case Id of
         undefined -> true; % Notification i.e. client does not require a response to method
-        Id -> 
+        Id ->
             case is_binary(Id) orelse is_integer(Id) of
                 true  -> true;
                 false -> false
@@ -112,7 +120,7 @@ is_valid_method(Method, Interface) ->
 is_valid_params(Method, JsonParams, Interface) ->
     ParamsList = proplists:get_all_values(Method, Interface),
     lists:member(true, [is_valid_params2(X, JsonParams) || X <- ParamsList]).
-    
+
 is_valid_params2(Params, JsonParams) ->
     ParamsTypeList = get_key_value(params, Params),
     case JsonParams of
@@ -147,23 +155,23 @@ get_key_value(Key, List) ->
 
 test_interface() ->
     [{<<"test_zero_params">>, [{params, []}]},
-     {<<"test_invalid_param_type">>, 
+     {<<"test_invalid_param_type">>,
       [{params, [{<<"invalid_param">>, integer}]}]},
-     {<<"test_invalid_param_type2">>, 
+     {<<"test_invalid_param_type2">>,
       [{params, [{<<"invalid_param2">>, "invalid"}]}]},
      {<<"test_polymorphism">>, [{params, []}]},
      {<<"test_polymorphism">>, [{params, [{<<"test_param">>, integer }]}]},
      {<<"test_polymorphism">>, [{params, [{<<"test_param">>, binary }]}]},
      {<<"test_polymorphism">>, [{params, [{<<"test_param1">>, integer },
                                           {<<"test_param2">>, binary }]}]},
-     {<<"test_param_types">>, [{ params, 
-                                [{<<"test_binary">>  , binary},
-                                 {<<"test_json">>    , json},
-                                 {<<"test_integer">> , integer},
-                                 {<<"test_float">>   , float},
-                                 {<<"test_boolean">> , boolean},
-                                 {<<"test_null">>    , null},
-                                 {<<"test_list">>    , list}]}]}].
+     {<<"test_param_types">>, [{ params,
+                                 [{<<"test_binary">>  , binary},
+                                  {<<"test_json">>    , json},
+                                  {<<"test_integer">> , integer},
+                                  {<<"test_float">>   , float},
+                                  {<<"test_boolean">> , boolean},
+                                  {<<"test_null">>    , null},
+                                  {<<"test_list">>    , list}]}]}].
 
 test_invalid_request() ->
     {[{<<"jsonrpc">>, <<"1.5">>}]}.
@@ -227,7 +235,7 @@ test_valid_method_polymorphism2() ->
       {<<"method">>, <<"test_polymorphism">>},
       {<<"params">>, {[{<<"test_param">>, <<"hello">>}]}}]}.
 decoded_test_valid_polymorphism2() ->
-    {<<"test_polymorphism">>, 
+    {<<"test_polymorphism">>,
      [{<<"test_param">>, <<"hello">>}],
      undefined}.
 
@@ -237,7 +245,7 @@ test_valid_method_polymorphism3() ->
       {<<"params">>, {[{<<"test_param1">>, 1 },
                        {<<"test_param2">>, <<"hello">>}]}}]}.
 decoded_test_valid_polymorphism3() ->
-    {<<"test_polymorphism">>, 
+    {<<"test_polymorphism">>,
      [{<<"test_param1">>, 1 }, {<<"test_param2">>, <<"hello">>}],
      undefined}.
 
@@ -318,24 +326,24 @@ invalid_id_test() ->
 valid_request_method_polymorphism1_test() ->
     ?assert(decoded_test_valid_polymorphism1() =:=
             decode(jiffy:encode(test_valid_method_polymorphism1()),
-                    test_interface())).
+                   test_interface())).
 
 valid_request_method_polymorphism2_test() ->
     ?assert(decoded_test_valid_polymorphism2() =:=
             decode(jiffy:encode(test_valid_method_polymorphism2()),
-                    test_interface())).
+                   test_interface())).
 
 valid_request_method_polymorphism3_test() ->
     ?assert(decoded_test_valid_polymorphism3() =:=
             decode(jiffy:encode(test_valid_method_polymorphism3()),
-                    test_interface())).
+                   test_interface())).
 
 valid_request_param_types_test() ->
     ?assert(decoded_test_param_types() =:=
             decode(jiffy:encode(test_param_types()), test_interface())).
 
-encode_reponse_test() -> 
-    ?assert(jiffy:encode(construct_response({[{<<"result">>, true}]}, 1)) =:= 
+encode_reponse_test() ->
+    ?assert(jiffy:encode(construct_response({[{<<"result">>, true}]}, 1)) =:=
             encode({[{<<"result">>, true}]}, 1)).
 
 -endif.
